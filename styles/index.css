@@ -1,0 +1,53 @@
+.cell-row {
+  display: flex;
+  flex-direction: row;
+}
+
+.cell,
+.cell-col-header {
+  border: 1px solid #000;
+  border-left: none;
+  border-top: none;
+  width: 100px;
+  height: 32px;
+  position: relative;
+}
+
+.cell-col-header {
+  padding: 2px;
+  text-align: center;
+}
+
+.cell-row-header {
+  border: 1px solid #000;
+  border-left: none;
+  border-top: none;
+  width: 40px;
+  height: 32px;
+  padding: 2px;
+  text-align: center;
+}
+
+.cell.selected::after {
+  content: "";
+  border: 3px solid green;
+  position: absolute;
+  top: -2px;
+  left: -1px;
+  width: 102px;
+  height: 35px;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.cell input {
+  width: 100%;
+  height: 100%;
+  border: none;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.cell input:focus {
+  outline: none;
+}
