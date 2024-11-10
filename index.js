@@ -56,7 +56,7 @@ function enableEditMode(clearCell) {
     .getElementById(activeCellId)
     .querySelector("input");
 
-  if (clearCell && activeCellInput.readOnly === true) {
+  if (clearCell && activeCellInput.readOnly) {
     activeCellInput.value = "";
     activeCellInput.removeAttribute("data-edit-mode-sticky");
   } else if (!clearCell) {
@@ -67,6 +67,18 @@ function enableEditMode(clearCell) {
   activeCellInput.classList.remove("hidden");
   activeCellInput.readOnly = false;
   activeCellInput.focus();
+}
+
+function clearCell() {
+  const activeCellId = cells[activeCell.y][activeCell.x];
+  const activeCellInput = document
+    .getElementById(activeCellId)
+    .querySelector("input");
+
+  if (activeCellInput.readOnly) {
+    activeCellInput.previousElementSibling.innerHTML = "";
+    activeCellInput.value = "";
+  }
 }
 
 function main() {
@@ -90,7 +102,12 @@ function main() {
       return;
     }
 
-    if (ev.key.match(/^[a-zA-Z0-9]$/)) {
+    if (
+      ev.key.match(
+        /^[a-zA-Z0-9`~!@#$%^&*\(\)\-\_\+\=\{\}\[\]\;\'\:\"\<\>\?\,\.\/\\\|]$/
+      ) ||
+      ev.key === "Backspace"
+    ) {
       enableEditMode(true);
       return;
     }
@@ -102,6 +119,11 @@ function main() {
 
     if (ev.key === "Escape") {
       renderActiveCell();
+      return;
+    }
+
+    if (ev.key === "Delete") {
+      clearCell();
       return;
     }
   });

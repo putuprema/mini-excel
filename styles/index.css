@@ -8,7 +8,7 @@
   border: 1px solid #000;
   border-left: none;
   border-top: none;
-  width: 100px;
+  width: 150px;
   height: 32px;
   position: relative;
 }
@@ -34,7 +34,7 @@
   position: absolute;
   top: -2px;
   left: -1px;
-  width: 102px;
+  width: 152px;
   height: 35px;
   pointer-events: none;
   z-index: 9999;
