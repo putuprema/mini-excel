@@ -7,43 +7,6 @@ const cells = [
   ["A6", "B6", "C6", "D6", "E6", "F6"]
 ];
 
-const cellMap = {
-  A1: { y: 0, x: 0 },
-  B1: { y: 0, x: 1 },
-  C1: { y: 0, x: 2 },
-  D1: { y: 0, x: 3 },
-  E1: { y: 0, x: 4 },
-  F1: { y: 0, x: 5 },
-  A2: { y: 1, x: 0 },
-  B2: { y: 1, x: 1 },
-  C2: { y: 1, x: 2 },
-  D2: { y: 1, x: 3 },
-  E2: { y: 1, x: 4 },
-  F2: { y: 1, x: 5 },
-  A3: { y: 2, x: 0 },
-  B3: { y: 2, x: 1 },
-  C3: { y: 2, x: 2 },
-  D3: { y: 2, x: 3 },
-  E3: { y: 2, x: 4 },
-  F3: { y: 2, x: 5 },
-  A4: { y: 3, x: 0 },
-  B4: { y: 3, x: 1 },
-  C4: { y: 3, x: 2 },
-  D4: { y: 3, x: 3 },
-  E4: { y: 3, x: 4 },
-  F4: { y: 3, x: 5 },
-  A5: { y: 4, x: 0 },
-  B5: { y: 4, x: 1 },
-  C5: { y: 4, x: 2 },
-  D5: { y: 4, x: 3 },
-  E5: { y: 4, x: 4 },
-  F5: { y: 4, x: 5 },
-  A6: { y: 5, x: 0 },
-  B6: { y: 5, x: 1 },
-  C6: { y: 5, x: 2 },
-  D6: { y: 5, x: 3 }
-};
-
 const activeCell = { x: 0, y: 0 };
 
 function renderActiveCell() {
@@ -100,12 +63,23 @@ function enableEditMode(clearCell) {
     activeCellInput.setAttribute("data-edit-mode-sticky", "true");
   }
 
+  activeCellInput.previousElementSibling.classList.add("d-none");
+  activeCellInput.classList.remove("hidden");
   activeCellInput.readOnly = false;
   activeCellInput.focus();
 }
 
 function main() {
   renderActiveCell();
+
+  document.querySelectorAll(".cell input").forEach((cellInput) => {
+    cellInput.addEventListener("blur", () => {
+      console.log(cellInput.parentElement.id);
+      cellInput.previousElementSibling.innerHTML = cellInput.value;
+      cellInput.previousElementSibling.classList.remove("d-none");
+      cellInput.classList.add("hidden");
+    });
+  });
 
   window.addEventListener("keydown", (ev) => {
     console.log(ev.key);
