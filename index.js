@@ -9,21 +9,6 @@ const cells = [
 
 const activeCell = { x: 0, y: 0 };
 
-function renderActiveCell() {
-  document.querySelectorAll(".cell").forEach((cell) => {
-    cell.classList.remove("selected");
-
-    const cellInput = cell.querySelector("input");
-    cellInput.readOnly = true;
-    cellInput.removeAttribute("data-edit-mode-sticky");
-    cellInput.blur();
-  });
-
-  const activeCellId = cells[activeCell.y][activeCell.x];
-  const activeCellEl = document.getElementById(activeCellId);
-  activeCellEl.classList.add("selected");
-}
-
 function moveActiveCell(key) {
   const activeCellId = cells[activeCell.y][activeCell.x];
   const activeCellInput = document
@@ -48,6 +33,21 @@ function moveActiveCell(key) {
   }
 
   renderActiveCell();
+}
+
+function renderActiveCell() {
+  document.querySelectorAll(".cell").forEach((cell) => {
+    cell.classList.remove("selected");
+
+    const cellInput = cell.querySelector("input");
+    cellInput.readOnly = true;
+    cellInput.removeAttribute("data-edit-mode-sticky");
+    cellInput.blur();
+  });
+
+  const activeCellId = cells[activeCell.y][activeCell.x];
+  const activeCellEl = document.getElementById(activeCellId);
+  activeCellEl.classList.add("selected");
 }
 
 function enableEditMode(clearCell) {
