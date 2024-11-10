@@ -9,11 +9,12 @@ const cells = [
 
 const activeCell = { x: 0, y: 0 };
 
+function getActiveCellElement() {
+  return document.getElementById(cells[activeCell.y][activeCell.x]);
+}
+
 function moveActiveCell(key) {
-  const activeCellId = cells[activeCell.y][activeCell.x];
-  const activeCellInput = document
-    .getElementById(activeCellId)
-    .querySelector("input");
+  const activeCellInput = getActiveCellElement().querySelector("input");
 
   if (
     key !== "Enter" &&
@@ -45,16 +46,12 @@ function renderActiveCell() {
     cellInput.blur();
   });
 
-  const activeCellId = cells[activeCell.y][activeCell.x];
-  const activeCellEl = document.getElementById(activeCellId);
+  const activeCellEl = getActiveCellElement();
   activeCellEl.classList.add("selected");
 }
 
 function enableEditMode(clearCell) {
-  const activeCellId = cells[activeCell.y][activeCell.x];
-  const activeCellInput = document
-    .getElementById(activeCellId)
-    .querySelector("input");
+  const activeCellInput = getActiveCellElement().querySelector("input");
 
   if (clearCell && activeCellInput.readOnly) {
     activeCellInput.value = "";
@@ -70,10 +67,7 @@ function enableEditMode(clearCell) {
 }
 
 function clearCell() {
-  const activeCellId = cells[activeCell.y][activeCell.x];
-  const activeCellInput = document
-    .getElementById(activeCellId)
-    .querySelector("input");
+  const activeCellInput = getActiveCellElement().querySelector("input");
 
   if (activeCellInput.readOnly) {
     activeCellInput.previousElementSibling.innerHTML = "";
@@ -103,10 +97,10 @@ function main() {
     }
 
     if (
+      ev.key === "Backspace" ||
       ev.key.match(
         /^[a-zA-Z0-9`~!@#$%^&*\(\)\-\_\+\=\{\}\[\]\;\'\:\"\<\>\?\,\.\/\\\|]$/
-      ) ||
-      ev.key === "Backspace"
+      )
     ) {
       enableEditMode(true);
       return;
