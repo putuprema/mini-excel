@@ -17,14 +17,30 @@ const activeCell = { x: 0, y: 0 };
  * @type {{[cellId: string]: Set<string>}}
  * @example { "A1": ["C1", "C2", "C3"] }
  */
-const cellDependencies = {};
+const cellDependants = {};
 
 function getActiveCellElement() {
   return document.getElementById(cells[activeCell.y][activeCell.x]);
 }
 
+/**
+ * Gets the container that displays the evaluated cell value
+ * @param {HTMLElement} parentCellElement 
+ */
+function getCellDisplayValueElement(parentCellElement) {
+  return parentCellElement.querySelector(".cell-display-value");
+}
+
+/**
+ * Gets the cell's input element that stores the raw cell value
+ * @param {HTMLElement} parentCellElement 
+ */
+function getCellInputElement(parentCellElement) {
+  return parentCellElement.querySelector("input");
+}
+
 function moveActiveCell(key) {
-  const activeCellInput = getActiveCellElement().querySelector("input");
+  const activeCellInput = getCellInputElement(getActiveCellElement());
 
   if (key !== "Enter" && activeCellInput.hasAttribute("data-edit-mode-sticky")) {
     return;
@@ -48,7 +64,7 @@ function renderActiveCell() {
   document.querySelectorAll(".cell").forEach((cell) => {
     cell.classList.remove("selected");
 
-    const cellInput = cell.querySelector("input");
+    const cellInput = getCellInputElement(cell);
     cellInput.readOnly = true;
     cellInput.removeAttribute("data-edit-mode-sticky");
     cellInput.blur();
@@ -60,7 +76,9 @@ function renderActiveCell() {
 }
 
 function enableEditMode(clearCell) {
-  const activeCellInput = getActiveCellElement().querySelector("input");
+  const activeCellEl = getActiveCellElement();
+  const activeCellDisplayValue = getCellDisplayValueElement(activeCellEl);
+  const activeCellInput = getCellInputElement(activeCellEl);
 
   if (clearCell && activeCellInput.readOnly) {
     activeCellInput.value = "";
@@ -69,14 +87,14 @@ function enableEditMode(clearCell) {
     activeCellInput.setAttribute("data-edit-mode-sticky", "true");
   }
 
-  activeCellInput.previousElementSibling.classList.add("d-none");
+  activeCellDisplayValue.classList.add("d-none");
   activeCellInput.classList.remove("hidden");
   activeCellInput.readOnly = false;
   activeCellInput.focus();
 }
 
 function clearCell() {
-  const activeCellInput = getActiveCellElement().querySelector("input");
+  const activeCellInput = getCellInputElement(getActiveCellElement());
   if (activeCellInput.readOnly) {
     activeCellInput.previousElementSibling.innerHTML = "";
     activeCellInput.value = "";
@@ -84,16 +102,16 @@ function clearCell() {
 }
 
 /**
- * Evalute the cell formula and return the result
+ * Evalutes the cell formula and return the result
  * @param {string} formula
  * @returns {string}
  */
 function evaluateCell(formula) {
   formula = formula.replaceAll("=", "");
 
-  let variables = formula.match(/([A-Z][0-9]+)/g);
+  let variables = new Set(formula.match(/([A-Z][0-9]+)/g));
   for (const variable of variables) {
-    const variableValue = document.getElementById(variable).querySelector("input").value;
+    const variableValue = getCellInputElement(document.getElementById(variable)).value;
 
     if (variableValue.startsWith("=")) {
       formula = formula.replaceAll(variable, evaluateCell(variableValue));
@@ -105,22 +123,26 @@ function evaluateCell(formula) {
   return eval(formula);
 }
 
-function evaluateDependencies(cellId) {
+/**
+ * Evaluates all cells that are referencing the {@link cellId}
+ * @param {string} cellId 
+ */
+function evaluateDependants(cellId) {
   /**
    * All cell IDs that are referencing the {@link cellId}
    * @type {Set<string>}
    */
-  const referencedByCells = cellDependencies[cellId];
-  if (referencedByCells) {
-    for (var cellId of referencedByCells) {
-      const cellInputEl = document.getElementById(cellId).querySelector("input");
-      const cellInputVal = cellInputEl.value;
+  const dependantCellIds = cellDependants[cellId];
+  if (dependantCellIds) {
+    for (var cellId of dependantCellIds) {
+      const cellEl = document.getElementById(cellId);
+      const cellInputVal = getCellInputElement(cellEl).value;
 
       // If the cell value is a formula, evaluate the formula,
       // then apply the dependencies recursively
       if (cellInputVal.startsWith("=")) {
-        cellInputEl.previousElementSibling.innerHTML = evaluateCell(cellInputVal);
-        evaluateDependencies(cellId);
+        getCellDisplayValueElement(cellEl).innerHTML = evaluateCell(cellInputVal);
+        evaluateDependants(cellId);
       }
     }
   }
@@ -173,28 +195,34 @@ function main() {
   });
 
   // Handler when a cell is out of focus
-  document.querySelectorAll(".cell input").forEach((cellInput) => {
+  document.querySelectorAll(".cell").forEach((cell) => {
+    const cellDisplayValueEl = getCellDisplayValueElement(cell);
+    const cellInput = getCellInputElement(cell);
     cellInput.addEventListener("blur", () => {
       /**
        * @type {string}
        */
       let inputVal = cellInput.value;
 
+      // Formula cell
       if (inputVal.startsWith("=")) {
+        // Update the map of cell dependants
         let variables = inputVal.match(/([A-Z][0-9]+)/g);
         for (const variable of variables) {
-          if (!cellDependencies[variable]) {
-            cellDependencies[variable] = new Set();
-          }
-          cellDependencies[variable].add(cellInput.parentElement.id);
+          cellDependants[variable] = cellDependants[variable] ?? new Set();
+          cellDependants[variable].add(cellInput.parentElement.id);
         }
-        cellInput.previousElementSibling.innerHTML = evaluateCell(inputVal);
-      } else {
-        cellInput.previousElementSibling.innerHTML = cellInput.value;
+
+        // Evaluate this cell's formula
+        cellDisplayValueEl.innerHTML = evaluateCell(inputVal);
+      } 
+      // Non-formula cell
+      else {
+        cellDisplayValueEl.innerHTML = cellInput.value;
       }
 
-      evaluateDependencies(cellInput.parentElement.id);
-      cellInput.previousElementSibling.classList.remove("d-none");
+      evaluateDependants(cellInput.parentElement.id);
+      cellDisplayValueEl.classList.remove("d-none");
       cellInput.classList.add("hidden");
 
       renderCellsWithFormulaSection();
