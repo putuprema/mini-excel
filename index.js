@@ -25,7 +25,7 @@ function getActiveCellElement() {
 
 /**
  * Gets the container that displays the evaluated cell value
- * @param {HTMLElement} parentCellElement 
+ * @param {HTMLElement} parentCellElement
  */
 function getCellDisplayValueElement(parentCellElement) {
   return parentCellElement.querySelector(".cell-display-value");
@@ -33,7 +33,7 @@ function getCellDisplayValueElement(parentCellElement) {
 
 /**
  * Gets the cell's input element that stores the raw cell value
- * @param {HTMLElement} parentCellElement 
+ * @param {HTMLElement} parentCellElement
  */
 function getCellInputElement(parentCellElement) {
   return parentCellElement.querySelector("input");
@@ -102,30 +102,79 @@ function clearCell() {
 }
 
 /**
- * Evalutes the cell formula and return the result
+ * Evaluates SUM function and return the result
+ * @param {string} expression
+ * @returns {string}
+ * @example evaluateSumFn("SUM(A1:B2)")
+ */
+function evaluateSumFn(expression) {
+  try {
+    const matches = expression.match(/([A-Z])([0-9]+)\:([A-Z])([0-9]+)/);
+    const sumStartCol = matches[1].charCodeAt(0) - 65;
+    const sumStartRow = parseInt(matches[2]);
+    const sumEndCol = matches[3].charCodeAt(0) - 65;
+    const sumEndRow = parseInt(matches[4]);
+
+    if (sumStartCol > sumEndCol || sumStartRow > sumEndRow) {
+      return "#CALC!";
+    }
+
+    const variableValues = [];
+
+    for (var i = sumStartRow - 1; i < sumEndRow; i++) {
+      for (var j = sumStartCol; j <= sumEndCol; j++) {
+        const cellId = cells[i][j];
+        const cellValue = getCellInputElement(document.getElementById(cellId)).value;
+        if (cellValue.startsWith("=")) {
+          variableValues.push(evaluateCell(cellValue));
+        } else {
+          variableValues.push(cellValue);
+        }
+      }
+    }
+
+    return eval(variableValues.join("+"));
+  } catch (e) {
+    return "#CALC!";
+  }
+}
+
+/**
+ * Evaluates the cell formula and return the result
  * @param {string} formula
  * @returns {string}
+ * @example evaluateCell("=A1+B1+SUM(C1:D2)")
  */
 function evaluateCell(formula) {
   formula = formula.replaceAll("=", "");
 
-  let variables = new Set(formula.match(/([A-Z][0-9]+)/g));
-  for (const variable of variables) {
-    const variableValue = getCellInputElement(document.getElementById(variable)).value;
-
-    if (variableValue.startsWith("=")) {
-      formula = formula.replaceAll(variable, evaluateCell(variableValue));
-    } else {
-      formula = formula.replaceAll(variable, variableValue);
+  try {
+    const variables = new Set(formula.match(/([A-Z][0-9]+)|(SUM\([A-Z][0-9]+:[A-Z][0-9]+\))/g));
+    for (const variable of variables) {
+      // Handle SUM function
+      if (variable.startsWith("SUM")) {
+        formula = formula.replaceAll(variable, evaluateSumFn(variable));
+      }
+      // Handle basic variable or math formula
+      else {
+        const variableValue = getCellInputElement(document.getElementById(variable)).value;
+        if (variableValue.startsWith("=")) {
+          formula = formula.replaceAll(variable, evaluateCell(variableValue));
+        } else {
+          formula = formula.replaceAll(variable, variableValue);
+        }
+      }
     }
-  }
 
-  return eval(formula);
+    return eval(formula);
+  } catch (e) {
+    return "#CALC!";
+  }
 }
 
 /**
  * Evaluates all cells that are referencing the {@link cellId}
- * @param {string} cellId 
+ * @param {string} cellId
  */
 function evaluateDependants(cellId) {
   /**
@@ -199,32 +248,50 @@ function main() {
     const cellDisplayValueEl = getCellDisplayValueElement(cell);
     const cellInput = getCellInputElement(cell);
     cellInput.addEventListener("blur", () => {
-      /**
-       * @type {string}
-       */
-      let inputVal = cellInput.value;
+      const inputVal = cellInput.value;
 
       // Formula cell
       if (inputVal.startsWith("=")) {
         // Update the map of cell dependants
-        let variables = inputVal.match(/([A-Z][0-9]+)/g);
+        const variables = inputVal.match(/([A-Z][0-9]+)|(SUM\([A-Z][0-9]+:[A-Z][0-9]+\))/g);
         for (const variable of variables) {
-          cellDependants[variable] = cellDependants[variable] ?? new Set();
-          cellDependants[variable].add(cellInput.parentElement.id);
+          // Handle SUM function
+          if (variable.startsWith("SUM")) {
+            const matches = variable.match(/([A-Z])([0-9]+)\:([A-Z])([0-9]+)/);
+            const sumStartCol = matches[1].charCodeAt(0) - 65;
+            const sumStartRow = parseInt(matches[2]);
+            const sumEndCol = matches[3].charCodeAt(0) - 65;
+            const sumEndRow = parseInt(matches[4]);
+
+            if (sumStartCol <= sumEndCol && sumStartRow <= sumEndRow) {
+              for (var i = sumStartRow - 1; i < sumEndRow; i++) {
+                for (var j = sumStartCol; j <= sumEndCol; j++) {
+                  const cellId = cells[i][j];
+                  cellDependants[cellId] = cellDependants[cellId] ?? new Set();
+                  cellDependants[cellId].add(cellInput.parentElement.id);
+                }
+              }
+            }
+          }
+          // Handle basic variable or math formula
+          else {
+            cellDependants[variable] = cellDependants[variable] ?? new Set();
+            cellDependants[variable].add(cellInput.parentElement.id);
+          }
         }
 
         // Evaluate this cell's formula
         cellDisplayValueEl.innerHTML = evaluateCell(inputVal);
-      } 
+      }
       // Non-formula cell
       else {
         cellDisplayValueEl.innerHTML = cellInput.value;
       }
 
-      evaluateDependants(cellInput.parentElement.id);
       cellDisplayValueEl.classList.remove("d-none");
       cellInput.classList.add("hidden");
 
+      evaluateDependants(cellInput.parentElement.id);
       renderCellsWithFormulaSection();
     });
   });
