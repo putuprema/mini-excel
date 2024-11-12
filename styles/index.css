@@ -8,7 +8,7 @@
   border: 1px solid #000;
   border-left: none;
   border-top: none;
-  width: 150px;
+  width: 120px;
   height: 32px;
   position: relative;
 }
@@ -16,6 +16,7 @@
 .cell-col-header {
   padding: 2px;
   text-align: center;
+  font-weight: bold;
 }
 
 .cell-row-header {
@@ -26,6 +27,7 @@
   height: 32px;
   padding: 2px;
   text-align: center;
+  font-weight: bold;
 }
 
 .cell.selected::after {
@@ -34,7 +36,7 @@
   position: absolute;
   top: -2px;
   left: -1px;
-  width: 152px;
+  width: 122px;
   height: 35px;
   pointer-events: none;
   z-index: 9999;
